@@ -1,0 +1,310 @@
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Toolbar from "@mui/material/Toolbar";
+import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
+import Menu from "@mui/material/Menu";
+import MenuIcon from "@mui/icons-material/Menu";
+import Container from "@mui/material/Container";
+import Avatar from "@mui/material/Avatar";
+import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
+import MenuItem from "@mui/material/MenuItem";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import Footer from "./Footer";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+
+const pages = [
+  { name: "Inicio", path: "/" },
+  { name: "Restaurantes", path: "/places?type=restaurant" },
+  { name: "Servicios", path: "/places?type=service" },
+  { name: "Entretenimiento", path: "/places?type=entertainment" },
+  { name: "Escribir Reseña", path: "/write-review" },
+];
+
+const MainLayout = ({ children }: { children: React.ReactNode }) => {
+  const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
+  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
+  const { authState, signOut } = useAuth();
+  const router = useRouter();
+
+  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElNav(event.currentTarget);
+  };
+
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseNavMenu = () => {
+    setAnchorElNav(null);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    handleCloseUserMenu();
+    router.push("/");
+  };
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <AppBar
+        position="static"
+        sx={{
+          background:
+            "linear-gradient(90deg, #1976d2 0%, #2196f3 50%, #0d47a1 100%)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          position: "relative",
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: "-100%",
+            width: "100%",
+            height: "100%",
+            background:
+              "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%)",
+            animation: "shine 3s infinite",
+          },
+          "@keyframes shine": {
+            "0%": { left: "-100%" },
+            "100%": { left: "100%" },
+          },
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            {/* Logo for desktop */}
+            <LocationOnIcon
+              sx={{
+                display: { xs: "none", md: "flex" },
+                mr: 1,
+                fontSize: "2rem",
+                color: "#fff",
+                animation: "pulse 2s infinite",
+                "@keyframes pulse": {
+                  "0%": { opacity: 0.8 },
+                  "50%": { opacity: 1 },
+                  "100%": { opacity: 0.8 },
+                },
+              }}
+            />
+            <Typography
+              variant="h6"
+              noWrap
+              component={Link}
+              href="/"
+              sx={{
+                mr: 2,
+                display: { xs: "none", md: "flex" },
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 700,
+                letterSpacing: ".1rem",
+                color: "white",
+                textDecoration: "none",
+                textShadow: "1px 1px 2px rgba(0,0,0,0.2)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
+                },
+              }}
+            >
+              VecinoApp
+            </Typography>
+
+            {/* Mobile menu */}
+            <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleOpenNavMenu}
+                color="inherit"
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorElNav}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "left",
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "left",
+                }}
+                open={Boolean(anchorElNav)}
+                onClose={handleCloseNavMenu}
+                sx={{
+                  display: { xs: "block", md: "none" },
+                }}
+              >
+                {pages.map((page) => (
+                  <MenuItem key={page.name} onClick={handleCloseNavMenu}>
+                    <Link
+                      href={page.path}
+                      passHref
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <Typography textAlign="center">{page.name}</Typography>
+                    </Link>
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Box>
+
+            {/* Logo for mobile */}
+            <LocationOnIcon
+              sx={{
+                display: { xs: "flex", md: "none" },
+                mr: 1,
+                fontSize: "1.8rem",
+                color: "#fff",
+              }}
+            />
+            <Typography
+              variant="h5"
+              noWrap
+              component={Link}
+              href="/"
+              sx={{
+                mr: 2,
+                display: { xs: "flex", md: "none" },
+                flexGrow: 1,
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 700,
+                letterSpacing: ".05rem",
+                color: "white",
+                textDecoration: "none",
+                textShadow: "1px 1px 2px rgba(0,0,0,0.2)",
+              }}
+            >
+              VecinoApp
+            </Typography>
+
+            {/* Desktop menu */}
+            <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+              {pages.map((page) => (
+                <Button
+                  key={page.name}
+                  component={Link}
+                  href={page.path}
+                  onClick={handleCloseNavMenu}
+                  sx={{ my: 2, color: "white", display: "block" }}
+                >
+                  {page.name}
+                </Button>
+              ))}
+            </Box>
+
+            {/* User menu */}
+            <Box sx={{ flexGrow: 0 }}>
+              {authState.user ? (
+                <>
+                  <Tooltip title="Abrir opciones">
+                    <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                      <Avatar
+                        alt={authState.user.full_name}
+                        src={authState.user.avatar_url || "/default-avatar.png"}
+                      />
+                    </IconButton>
+                  </Tooltip>
+                  <Menu
+                    sx={{ mt: "45px" }}
+                    id="menu-appbar"
+                    anchorEl={anchorElUser}
+                    anchorOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                    keepMounted
+                    transformOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                    open={Boolean(anchorElUser)}
+                    onClose={handleCloseUserMenu}
+                  >
+                    <MenuItem onClick={handleCloseUserMenu}>
+                      <Link
+                        href="/profile"
+                        passHref
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
+                        <Typography textAlign="center">Mi Perfil</Typography>
+                      </Link>
+                    </MenuItem>
+                    <MenuItem onClick={handleCloseUserMenu}>
+                      <Link
+                        href="/collections"
+                        passHref
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
+                        <Typography textAlign="center">
+                          Mis Colecciones
+                        </Typography>
+                      </Link>
+                    </MenuItem>
+                    <MenuItem onClick={handleCloseUserMenu}>
+                      <Link
+                        href="/settings"
+                        passHref
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
+                        <Typography textAlign="center">
+                          Configuración
+                        </Typography>
+                      </Link>
+                    </MenuItem>
+                    <MenuItem onClick={handleSignOut}>
+                      <Typography textAlign="center">Cerrar Sesión</Typography>
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    component={Link}
+                    href="/auth?mode=login"
+                    variant="outlined"
+                    sx={{ color: "white", borderColor: "white" }}
+                  >
+                    Iniciar Sesión
+                  </Button>
+                  <Button
+                    component={Link}
+                    href="/auth?mode=register"
+                    variant="contained"
+                    sx={{ bgcolor: "white", color: "primary.main" }}
+                  >
+                    Registrarse
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      <Box component="main" sx={{ flexGrow: 1 }}>
+        {children}
+      </Box>
+
+      <Footer />
+    </Box>
+  );
+};
+
+export default MainLayout;
