@@ -126,7 +126,14 @@ export default function SettingsPage() {
             <Box component="form" onSubmit={handleUpdateProfile}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                 <Avatar
-                  src={authState.user?.avatar_url || "/default-avatar.png"}
+                  src={
+                    authState.user?.avatar_url
+                      ? authState.user.avatar_url.replace(
+                          "/avatars/",
+                          "/profiles/"
+                        )
+                      : "/default-avatar.png"
+                  }
                   alt={authState.user?.full_name}
                   sx={{ width: 80, height: 80, mr: 2 }}
                 />

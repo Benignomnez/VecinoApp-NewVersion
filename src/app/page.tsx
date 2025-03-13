@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -50,6 +50,9 @@ import Zoom from "@mui/material/Zoom";
 import Grow from "@mui/material/Grow";
 import Fade from "@mui/material/Fade";
 import Autocomplete from "@mui/material/Autocomplete";
+import toast from "react-hot-toast";
+import HeroSection from "@/components/HeroSection";
+import PopularCategories from "@/components/PopularCategories";
 
 // Categories data
 const categories = [
@@ -190,6 +193,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Animation states
   const [showMockup, setShowMockup] = useState(false);
@@ -212,6 +216,20 @@ export default function HomePage() {
     "Pat'e Palo",
     "La Cassina",
   ];
+
+  // Check for email confirmation from URL parameters
+  useEffect(() => {
+    const emailConfirmed = searchParams.get("emailConfirmed");
+    if (emailConfirmed === "true") {
+      // Show a welcome toast if email was confirmed
+      toast.success("¡Cuenta verificada! Bienvenido a VecinoApp", {
+        duration: 5000,
+      });
+
+      // Could clean the URL here if desired
+      // window.history.replaceState({}, "", "/");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Show mockup with delay for animation
@@ -268,16 +286,45 @@ export default function HomePage() {
         }
 
         // Fetch recent reviews from Supabase
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from("reviews")
-          .select("*, profiles(*)")
-          .order("created_at", { ascending: false })
-          .limit(3);
+        try {
+          // First try the proper join syntax if the relationship exists
+          const { data: reviewsData, error: reviewsError } = await supabase
+            .from("reviews")
+            .select(
+              `
+              id,
+              place_id,
+              rating,
+              content,
+              photos,
+              created_at,
+              profile_id,
+              profiles:profile_id(id, full_name, avatar_url)
+            `
+            )
+            .order("created_at", { ascending: false })
+            .limit(3);
 
-        if (reviewsError) {
-          console.error("Error fetching reviews:", reviewsError);
-        } else {
-          setRecentReviews(reviewsData || []);
+          if (reviewsError) {
+            console.error("Error fetching reviews:", reviewsError);
+
+            // Fallback to simpler query without the join if it fails
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from("reviews")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(3);
+
+            if (fallbackError) {
+              console.error("Fallback query also failed:", fallbackError);
+            } else {
+              setRecentReviews(fallbackData || []);
+            }
+          } else {
+            setRecentReviews(reviewsData || []);
+          }
+        } catch (error) {
+          console.error("Exception during reviews fetch:", error);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -418,243 +465,25 @@ export default function HomePage() {
 
   return (
     <MainLayout>
-      {/* Hero Section with Search */}
-      <Box className="hero">
-        <Container>
-          <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Typography
-              variant="h3"
-              component="h1"
-              fontWeight="bold"
-              gutterBottom
-            >
-              Descubre lo mejor de República Dominicana
-            </Typography>
-            <Typography variant="h6">
-              Encuentra restaurantes, hoteles, servicios y más con reseñas
-              reales de la comunidad
-            </Typography>
-          </Box>
-
-          <Box className="search-container">
-            <Grid
-              container
-              spacing={0}
-              sx={{
-                bgcolor: "white",
-                borderRadius: 30,
-                boxShadow: "0 5px 15px rgba(0, 0, 0, 0.2)",
-                overflow: "hidden",
-              }}
-            >
-              <Grid item xs={12} md={7}>
-                <Autocomplete
-                  id="search-autocomplete"
-                  open={open}
-                  onOpen={() => setOpen(true)}
-                  onClose={() => setOpen(false)}
-                  inputValue={inputValue}
-                  onInputChange={(event, newInputValue) => {
-                    setInputValue(newInputValue);
-                  }}
-                  value={searchQuery}
-                  onChange={(event, newValue) => {
-                    if (typeof newValue === "string") {
-                      setSearchQuery(newValue);
-                    } else if (newValue && newValue.description) {
-                      setSearchQuery(newValue.description);
-                    } else {
-                      setSearchQuery("");
-                    }
-                  }}
-                  isOptionEqualToValue={(option, value) =>
-                    option.place_id === value.place_id
-                  }
-                  getOptionLabel={(option) => {
-                    if (typeof option === "string") {
-                      return option;
-                    }
-                    return option.main_text || option.description || "";
-                  }}
-                  options={options}
-                  loading={autocompleteLoading}
-                  filterOptions={(x) => x}
-                  freeSolo
-                  fullWidth
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Buscar restaurantes, bares, servicios..."
-                      variant="outlined"
-                      onKeyPress={handleKeyPress}
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <React.Fragment>
-                            {autocompleteLoading ? (
-                              <CircularProgress color="inherit" size={20} />
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                          </React.Fragment>
-                        ),
-                        sx: {
-                          borderRadius: {
-                            xs: "30px 30px 0 0",
-                            md: "30px 0 0 30px",
-                          },
-                          border: "none",
-                          "& fieldset": { border: "none" },
-                          padding: "15px 20px",
-                        },
-                      }}
-                    />
-                  )}
-                  renderOption={(props, option) => (
-                    <li {...props}>
-                      <Box>
-                        <Typography variant="body1" fontWeight="medium">
-                          {option.main_text}
-                        </Typography>
-                        {option.secondary_text && (
-                          <Typography variant="body2" color="text.secondary">
-                            {option.secondary_text}
-                          </Typography>
-                        )}
-                      </Box>
-                    </li>
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField
-                  select
-                  fullWidth
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  variant="outlined"
-                  InputProps={{
-                    sx: {
-                      borderRadius: { xs: "0", md: "0" },
-                      border: "none",
-                      borderLeft: { xs: "none", md: "1px solid #eee" },
-                      borderTop: { xs: "1px solid #eee", md: "none" },
-                      borderBottom: { xs: "1px solid #eee", md: "none" },
-                      "& fieldset": { border: "none" },
-                      padding: "15px 20px",
-                    },
-                  }}
-                >
-                  {locations.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSearch}
-                  startIcon={<SearchIcon />}
-                  sx={{
-                    borderRadius: { xs: "0 0 30px 30px", md: "0 30px 30px 0" },
-                    height: "100%",
-                    padding: "15px 25px",
-                    fontSize: "16px",
-                  }}
-                >
-                  Buscar
-                </Button>
-              </Grid>
-            </Grid>
-          </Box>
-        </Container>
-      </Box>
+      {/* Replace the old hero section with our new component */}
+      <HeroSection
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        location={location}
+        setLocation={setLocation}
+        handleSearch={handleSearch}
+        handleKeyPress={handleKeyPress}
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        options={options}
+        loading={autocompleteLoading}
+        open={open}
+        setOpen={setOpen}
+      />
 
       {/* Categories Section */}
       <Container sx={{ my: 8 }}>
-        <Typography variant="h4" component="h2" fontWeight="bold" gutterBottom>
-          Categorías Populares
-        </Typography>
-        <Grid container spacing={3}>
-          {categories.map((category) => (
-            <Grid item xs={6} sm={4} md={3} key={category.id}>
-              <Card
-                sx={{
-                  borderRadius: 3,
-                  boxShadow: "0 3px 10px rgba(0, 0, 0, 0.1)",
-                  transition: "transform 0.3s",
-                  cursor: "pointer",
-                  "&:hover": {
-                    transform: "translateY(-5px)",
-                  },
-                }}
-                onClick={() => handleCategoryClick(category.name)}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    p: 3,
-                    height: "150px",
-                    backgroundColor: `${category.color}15`, // Using the color with 15% opacity
-                  }}
-                >
-                  {category.icon === "RestaurantIcon" && (
-                    <RestaurantIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                  {category.icon === "BeachAccessIcon" && (
-                    <BeachAccessIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                  {category.icon === "HotelIcon" && (
-                    <HotelIcon sx={{ fontSize: 60, color: category.color }} />
-                  )}
-                  {category.icon === "LocalBarIcon" && (
-                    <LocalBarIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                  {category.icon === "LocalCafeIcon" && (
-                    <LocalCafeIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                  {category.icon === "MiscellaneousServicesIcon" && (
-                    <MiscellaneousServicesIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                  {category.icon === "TheaterComedyIcon" && (
-                    <TheaterComedyIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                  {category.icon === "ShoppingBagIcon" && (
-                    <ShoppingBagIcon
-                      sx={{ fontSize: 60, color: category.color }}
-                    />
-                  )}
-                </Box>
-                <CardContent sx={{ textAlign: "center" }}>
-                  <Typography variant="h6" component="div">
-                    {category.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {category.count} lugares
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <PopularCategories />
       </Container>
 
       {/* Featured Businesses Section */}

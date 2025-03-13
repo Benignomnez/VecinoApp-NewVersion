@@ -5,9 +5,9 @@ import { createTheme } from "@mui/material/styles";
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#1976d2",
-      light: "#2196f3",
-      dark: "#0d47a1",
+      main: "#ff385c",
+      light: "#ff6b85",
+      dark: "#e31c5f",
       contrastText: "#ffffff",
     },
     secondary: {
@@ -89,7 +89,7 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         },
       },
     },

@@ -1,6 +1,7 @@
 import { Inter, Poppins } from "next/font/google";
 import "@/styles/globals.css";
 import ClientThemeProvider from "@/components/ClientThemeProvider";
+import { Metadata } from "next";
 
 const inter = Inter({ subsets: ["latin"] });
 const poppins = Poppins({
@@ -10,10 +11,10 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export const metadata = {
-  title: "VecinoApp - Descubre los mejores lugares en tu vecindario",
+export const metadata: Metadata = {
+  title: "VecinoApp - Tu guía local de confianza",
   description:
-    "Encuentra restaurantes, hoteles, servicios y más con reseñas reales de la comunidad local",
+    "Descubre los mejores lugares y servicios de tu vecindario con reseñas auténticas de tus vecinos.",
 };
 
 export default function RootLayout({
