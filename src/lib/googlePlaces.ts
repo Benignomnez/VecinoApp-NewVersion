@@ -3,6 +3,7 @@
 // Types for Google Places API responses
 export interface PlaceResult {
   place_id: string;
+  id?: string;
   name: string;
   formatted_address: string;
   geometry: {
@@ -35,6 +36,7 @@ export interface PlacesSearchResponse {
 export interface PlaceDetailsResponse {
   result: PlaceResult & {
     reviews?: {
+      id?: string;
       author_name: string;
       rating: number;
       text: string;

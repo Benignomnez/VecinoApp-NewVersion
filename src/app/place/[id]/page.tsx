@@ -136,7 +136,7 @@ export default function PlaceDetailPage() {
           const { data, error } = await supabase
             .from("collections")
             .select("id, name")
-            .eq("user_id", authState.user.id);
+            .eq("user_id", authState.user?.id);
 
           if (error) {
             console.error("Error fetching collections:", error);
@@ -633,7 +633,7 @@ export default function PlaceDetailPage() {
 
               {place.reviews?.map((review, index) => (
                 <Card
-                  key={review.id}
+                  key={review.id || `review-${index}`}
                   sx={{
                     mb: 3,
                     borderRadius: 2,

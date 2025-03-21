@@ -499,7 +499,13 @@ export default function HomePage() {
           </Typography>
           <Grid container spacing={3}>
             {featuredBusinesses.map((business) => (
-              <Grid item xs={12} sm={6} md={3} key={business.id}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={3}
+                key={business.id || business.place_id}
+              >
                 <Card
                   sx={{
                     borderRadius: 3,
