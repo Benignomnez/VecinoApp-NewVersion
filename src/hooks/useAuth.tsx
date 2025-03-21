@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             isLoading: false,
             error: "Authentication timed out. Please try refreshing the page.",
           });
-        }, 15000); // Extend to 15 seconds
+        }, 30000); // Extend to 30 seconds (was 15 seconds)
       }
     };
 
@@ -88,16 +88,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Start the global safety timer
         startGlobalSafetyTimeout();
 
+        // Add retry mechanism for session retrieval
+        let retries = 0;
+        const maxRetries = 3;
+        let session = null;
+        let error = null;
+
+        while (retries < maxRetries && !session) {
+          try {
+            console.log(`Intento ${retries + 1} de obtener sesión...`);
+            const response = await supabase.auth.getSession();
+            session = response.data.session;
+            if (!session) {
+              console.log(`No hay sesión en intento ${retries + 1}`);
+              if (retries < maxRetries - 1) {
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 1000 * (retries + 1))
+                );
+              }
+            }
+          } catch (err) {
+            console.error(`Error en intento ${retries + 1}:`, err);
+            error = err;
+            if (retries < maxRetries - 1) {
+              await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * (retries + 1))
+              );
+            }
+          }
+          retries++;
+        }
+
         // Safety timeout to prevent infinite loading
         const safetyTimer = setTimeout(() => {
           console.log("⚠️ Initial session safety timeout triggered");
           updateAuthState({ isLoading: false });
-        }, 5000); // Keep at 5 seconds
+        }, 5000);
 
-        // Solo establecer isLoading a true si hay una sesión que cargar
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        if (error && !session) {
+          throw error;
+        }
 
         // Clear safety timeout
         clearTimeout(safetyTimer);
@@ -574,7 +604,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const loadingToast = toast.loading("Cerrando sesión...");
 
       updateAuthState({ isLoading: true });
+
+      // Call Supabase signOut
       await supabase.auth.signOut();
+
+      // Inmediatamente limpiar el estado de autenticación
       updateAuthState({
         user: null,
         session: null,
@@ -582,16 +616,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         error: null,
       });
 
-      // Show success toast after signout
+      // Dismiss loading toast
       toast.dismiss(loadingToast);
+
+      // Mostrar toast de éxito
       toast.success("Has cerrado sesión correctamente");
+
+      // Forzar recarga completa de la página para limpiar cualquier estado persistente
+      if (typeof window !== "undefined") {
+        // Pequeño retraso para permitir que se muestre el toast antes de recargar
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
+      }
     } catch (error: any) {
       console.error("Error signing out:", error);
       updateAuthState({
+        user: null, // Aún así limpiar el usuario
+        session: null,
         isLoading: false,
         error: "Error al cerrar sesión",
       });
       toast.error("Error al cerrar sesión");
+
+      // Incluso en caso de error, intentar forzar la recarga para limpiar el estado
+      if (typeof window !== "undefined") {
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 500);
+      }
     }
   };
 

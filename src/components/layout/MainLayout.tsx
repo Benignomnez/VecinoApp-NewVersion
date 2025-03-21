@@ -76,6 +76,9 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const [sessionStable, setSessionStable] = useState(false);
   const [showFallbackButtons, setShowFallbackButtons] = useState(false);
 
+  // Verificación adicional para asegurarse de que el estado de autenticación es consistente
+  const isAuthenticated = Boolean(authState.user && authState.session);
+
   useEffect(() => {
     if (!authState.isLoading) {
       setSessionStable(true);
@@ -116,9 +119,10 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
     handleCloseUserMenu();
-    router.push("/");
+    await signOut();
+    // Forzar recarga de la página para asegurar un estado limpio
+    window.location.href = "/";
   };
 
   return (
@@ -241,15 +245,15 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
               ))}
             </Box>
 
-            {sessionStable && authState.user ? (
+            {sessionStable && isAuthenticated ? (
               <>
                 <Tooltip title="Abrir opciones">
                   <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                     <Avatar
-                      alt={authState.user.full_name || "Usuario"}
+                      alt={authState.user?.full_name || "Usuario"}
                       src={
-                        authState.user.avatar_url
-                          ? authState.user.avatar_url.replace(
+                        authState.user?.avatar_url
+                          ? authState.user?.avatar_url.replace(
                               "/avatars/",
                               "/profiles/"
                             )
