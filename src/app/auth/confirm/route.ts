@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
           "Email confirmation successful, redirecting to:",
           redirectTo.toString()
         );
-        return NextResponse.redirect(redirectTo);
+
+        // Redirect to the confirmation page first to show visual feedback
+        return NextResponse.redirect(
+          new URL("/auth/confirmation", request.url)
+        );
       } else {
         console.error("Error verifying email:", error);
       }
