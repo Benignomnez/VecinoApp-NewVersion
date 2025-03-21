@@ -112,21 +112,128 @@ export default function WriteReviewPage() {
     setError(null);
 
     try {
-      const { error: insertError } = await supabase.from("reviews").insert({
-        user_id: authState.user.id,
+      // Información de depuración del usuario y los datos que se enviarán
+      console.log("Usuario actual:", authState.user);
+
+      const reviewData = {
+        profile_id: authState.user.id,
         place_id: selectedPlace.place_id,
-        place_name: selectedPlace.name,
-        place_address:
-          selectedPlace.formatted_address || selectedPlace.vicinity,
-        place_photo: selectedPlace.photos?.[0]?.photo_reference || null,
         rating,
-        comment: reviewText.trim(),
-      });
+        content: reviewText.trim(),
+      };
+
+      console.log(
+        "Intentando enviar reseña con los siguientes datos:",
+        reviewData
+      );
+
+      // Verificar si el usuario tiene un perfil existente
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", authState.user.id)
+        .single();
+
+      if (profileError) {
+        console.error(
+          "Error al verificar el perfil del usuario:",
+          profileError
+        );
+        // Intentar crear un perfil para el usuario si no existe
+        const { data: newProfile, error: createProfileError } = await supabase
+          .from("profiles")
+          .insert([
+            {
+              id: authState.user.id,
+              full_name: authState.user.user_metadata?.full_name || "Usuario",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ])
+          .select();
+
+        if (createProfileError) {
+          console.error(
+            "Error al crear perfil para el usuario:",
+            createProfileError
+          );
+          throw new Error(
+            "No se pudo crear un perfil para su usuario. Por favor contacte al administrador."
+          );
+        } else {
+          console.log("Perfil creado con éxito:", newProfile);
+        }
+      } else {
+        console.log("Perfil de usuario encontrado:", profileData);
+      }
+
+      // Verificar la estructura de la tabla de reviews
+      const { data: tableInfo, error: tableError } = await supabase
+        .rpc("get_table_definition", { table_name: "reviews" })
+        .select();
+
+      if (tableError) {
+        console.error(
+          "Error al obtener la estructura de la tabla:",
+          tableError
+        );
+      } else {
+        console.log("Estructura de la tabla reviews:", tableInfo);
+      }
+
+      // Intentar insertar la reseña
+      const { data: insertedReview, error: insertError } = await supabase
+        .from("reviews")
+        .insert(reviewData)
+        .select();
 
       if (insertError) {
+        console.error("Error detallado al insertar la reseña:", insertError);
+
+        // Si hay un error relacionado con la columna, probar con los nombres de columna alternativos
+        if (insertError.message && insertError.message.includes("column")) {
+          console.log("Intentando con nombres de columna alternativos...");
+
+          const alternativeData = {
+            user_id: authState.user.id,
+            place_id: selectedPlace.place_id,
+            rating,
+            comment: reviewText.trim(),
+          };
+
+          console.log("Datos alternativos:", alternativeData);
+
+          const { data: altInsertedReview, error: altInsertError } =
+            await supabase.from("reviews").insert(alternativeData).select();
+
+          if (altInsertError) {
+            console.error(
+              "Error con los nombres alternativos:",
+              altInsertError
+            );
+            throw altInsertError;
+          } else {
+            console.log(
+              "Reseña insertada con nombres alternativos:",
+              altInsertedReview
+            );
+            setSuccess(true);
+            setRating(null);
+            setReviewText("");
+            setSelectedPlace(null);
+
+            // Redirect to the place page after a short delay
+            setTimeout(() => {
+              router.push(`/place/${selectedPlace.place_id}`);
+            }, 2000);
+            return;
+          }
+        }
+
         throw insertError;
       }
 
+      console.log("Reseña insertada con éxito:", insertedReview);
       setSuccess(true);
       setRating(null);
       setReviewText("");

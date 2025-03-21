@@ -267,10 +267,10 @@ export default function PlaceDetailPage() {
     setLoading(true);
     try {
       const { error } = await supabase.from("reviews").insert({
-        user_id: authState.user.id,
+        profile_id: authState.user.id,
         place_id: place.place_id,
         rating: reviewRating,
-        comment: reviewText,
+        content: reviewText,
       });
 
       if (error) {
